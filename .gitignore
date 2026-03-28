@@ -1,0 +1,17 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# Python
+__pycache__/
+*.pyc
+
+# Local test artifacts
+/tmp/
+/out/
+
