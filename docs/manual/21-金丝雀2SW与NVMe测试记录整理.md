@@ -219,6 +219,56 @@ ipmitool sensor list
 nvme smart-log /dev/nvme0
 ```
 
+### 3.5.1 `nvme smart-log` 工具补充说明
+
+结合当天现场交流，`nvme smart-log` 这个命令本身属于 `nvme-cli`，不是系统默认自带命令。
+
+不同场景建议这样处理：
+
+- Linux OS 下查询 NVMe SMART、SN、型号、固件、健康状态时，优先安装并使用 `nvme-cli`
+- Windows OS 下通常不直接使用 `nvme smart-log`，更常见的是使用厂商工具或 `smartmontools`
+- BMC 侧不默认认为可以直接执行 `nvme smart-log`，优先通过 Redfish、SEL、Sensor、Storage 相关接口取数
+
+Linux 常用安装方式：
+
+```bash
+# Ubuntu / Debian
+apt install nvme-cli
+
+# Rocky / RHEL / CentOS
+dnf install nvme-cli
+```
+
+Linux 常用查询命令：
+
+```bash
+nvme list
+nvme id-ctrl /dev/nvme0
+nvme smart-log /dev/nvme0
+```
+
+重点关注字段：
+
+- `sn`
+- `mn`
+- `fr`
+- `critical_warning`
+- `temperature`
+- `media_errors`
+- `percentage_used`
+
+Windows 场景补充：
+
+- 如果只是查序列号，可用系统命令或厂商工具
+- 如果要看更完整的 NVMe 健康信息，优先考虑 `smartmontools`
+- Windows 自带命令对 PCIe 速率、链路宽度和 NVMe SMART 的可见性不如 Linux 直接，服务器整合测试场景下更推荐进 Linux 环境确认
+
+结论：
+
+- Linux 下查 NVMe SMART，优先工具是 `nvme-cli`
+- Windows 下不要默认能跑 `nvme smart-log`
+- BMC 下优先走带外接口，不把 OS 命令当成默认手段
+
 ### 3.6 BMC 侧背板与在位设备信息检查
 
 来源：
