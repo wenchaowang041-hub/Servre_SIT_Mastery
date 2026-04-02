@@ -286,6 +286,126 @@ Windows 场景补充：
 
 - BIOS、BMC、OS 三侧的 NVMe 数量与映射必须一致
 
+### 3.7 `100156_硬盘FIO性能测试`
+
+来源：`100156_硬盘FIO性能测试`
+
+这部分资料对应 NVMe 盘在 OS 下的性能验证，适合沉淀为标准化批量测试项。
+
+#### 3.7.1 测试目标
+
+- 验证 NVMe 单盘顺序读性能
+- 验证 NVMe 单盘顺序写性能
+- 验证 NVMe 单盘随机读写混合性能
+- 对比多盘之间的一致性
+- 结合 `smart-log` 与 PCIe 链路状态排查异常盘
+
+#### 3.7.2 推荐测试命令
+
+顺序读测试：
+
+```bash
+fio --name=seq_read --filename=/dev/nvme0n1 --rw=read --bs=1M --size=10G --runtime=60 --time_based --numjobs=1 --ioengine=libaio --direct=1
+```
+
+顺序写测试：
+
+```bash
+fio --name=seq_write --filename=/dev/nvme0n1 --rw=write --bs=1M --size=10G --runtime=60 --time_based --numjobs=1 --ioengine=libaio --direct=1
+```
+
+随机读写混合测试：
+
+```bash
+fio --name=rand_rw --filename=/dev/nvme0n1 --rw=randrw --rwmixread=70 --bs=4k --size=10G --runtime=60 --time_based --numjobs=4 --ioengine=libaio --direct=1
+```
+
+说明：
+
+- `--time_based` 建议固定带上，避免测试在未满 60 秒时提前结束
+- 写测试会破坏目标盘原有数据
+- 系统盘禁止执行写测试
+
+#### 3.7.3 本轮批量测试结论
+
+基于 `fio-results-2026-04-02-151843` 的结果，当前结论如下：
+
+- 系统盘 `nvme5n1` 已被正确排除，参与测试的是其余 11 块非系统盘
+- 大多数盘顺序读性能约为 `5.3GB/s~5.4GB/s`
+- 大多数盘顺序写性能约为 `2.39GB/s~2.42GB/s`
+- 随机读写混合性能大致在 `40.8k~47.0k IOPS`
+
+其中存在明显异常盘：
+
+- `nvme0n1` 顺序读约 `1619MiB/s`
+- `nvme4n1` 顺序读约 `1724MiB/s`
+
+同时存在一组在随机读写混合场景下偏弱的盘：
+
+- `nvme6n1`：`41.6k IOPS`，平均时延约 `2712.49`
+- `nvme4n1`：`41.5k IOPS`，平均时延约 `2759.02`
+- `nvme7n1`：`40.8k IOPS`，平均时延约 `2852.75`
+
+从结果看：
+
+- 顺序写整体较一致
+- 顺序读存在个别盘明显掉队
+- 随机读写混合存在第二档性能偏弱盘
+
+#### 3.7.4 `smart-log` 健康状态检查
+
+本轮抽查和汇总结果显示：
+
+- `critical_warning = 0`
+- `media_errors = 0`
+- 温度大致在 `37C~52C`
+
+因此当前异常现象不优先归因于介质错误或 SMART 告警。
+
+#### 3.7.5 PCIe 链路状态排查结论
+
+针对异常盘补充执行 `lspci -vv -s <BDF>` 后，抽查到的关键信息为：
+
+- `LnkCap: Speed 16GT/s, Width x4`
+- `LnkSta: Speed 16GT/s, Width x4`
+
+当前抽查结果表明：
+
+- PCIe 链路能力值为 `Gen4 x4`
+- 实际协商链路状态也是 `Gen4 x4`
+- 未发现降速
+- 未发现降宽
+
+因此，本轮性能异常暂不归因于 PCIe 链路协商异常。
+
+#### 3.7.6 固件版本补充观察
+
+已确认异常盘与正常盘型号一致，均为：
+
+- `mn: HWE6AP441T9L00KN`
+
+但部分盘固件版本存在差异，例如：
+
+- `nvme0n1`：`fr = 2020`
+- `nvme2n1`：`fr = 2020`
+- `nvme4n1`：`fr = 1073`
+
+这说明盘间存在固件版本不一致现象，后续建议继续核对全盘固件一致性。
+
+#### 3.7.7 当前判断与后续建议
+
+当前可初步判断：
+
+- 性能异常不是由 PCIe 降速或降宽直接导致
+- 更可能与盘本体状态、固件版本差异、盘间一致性或控制器内部状态有关
+
+建议后续优先动作：
+
+- 全盘核对 `Firmware` 版本
+- 对异常盘与正常盘做一一对应的 `id-ctrl` 对比
+- 复测异常盘的单盘顺序读与随机读写混合
+- 必要时执行换槽复测，确认问题是否跟盘走
+
 ## 4. BUG 资料整理
 
 来源：`BUG`
@@ -336,6 +456,23 @@ curl -k -u <user>:<pass> https://<bmc>/redfish/v1/Systems/1
 curl -k -u <user>:<pass> https://<bmc>/redfish/v1/Chassis/1/PCIeDevices
 curl -k -u <user>:<pass> https://<bmc>/redfish/v1/Systems/1/Storages
 ```
+
+### 5.4 NVMe FIO 批量性能测试
+
+```bash
+# 顺序读
+fio --name=seq_read --filename=/dev/nvme0n1 --rw=read --bs=1M --size=10G --runtime=60 --time_based --numjobs=1 --ioengine=libaio --direct=1
+
+# 顺序写
+fio --name=seq_write --filename=/dev/nvme0n1 --rw=write --bs=1M --size=10G --runtime=60 --time_based --numjobs=1 --ioengine=libaio --direct=1
+
+# 随机读写混合
+fio --name=rand_rw --filename=/dev/nvme0n1 --rw=randrw --rwmixread=70 --bs=4k --size=10G --runtime=60 --time_based --numjobs=4 --ioengine=libaio --direct=1
+```
+
+配套自动化脚本见：
+
+- `practice/scripts-练手脚本/nvme_fio_auto_test.sh`
 
 ## 6. 建议补齐项
 
