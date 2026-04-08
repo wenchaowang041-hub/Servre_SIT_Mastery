@@ -2,7 +2,7 @@
 
 适用脚本：
 
-- `practice/scripts-练手脚本/nvme_fio_auto_test.sh`
+- `practice/scripts-练手脚本/legacy/nvme_fio_auto_test.sh`
 
 ## 1. 用途
 

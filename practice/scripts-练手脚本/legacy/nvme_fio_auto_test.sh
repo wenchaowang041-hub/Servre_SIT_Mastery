@@ -108,27 +108,129 @@ extract_metric_token() {
   grep -Eo "$pattern" "$file" 2>/dev/null | head -n1 || true
 }
 
+extract_direction_metric_token() {
+  local file="$1"
+  local direction="$2"
+  local pattern="$3"
+  awk -v direction="$direction" -v pattern="$pattern" '
+    $0 ~ "^[[:space:]]*" direction ":" {
+      if (match($0, pattern)) {
+        print substr($0, RSTART, RLENGTH)
+      }
+      exit
+    }
+  ' "$file" 2>/dev/null || true
+}
+
 extract_latency_avg() {
   local file="$1"
   awk '
-    /lat \(/ || /clat \(/ {
+    /^[[:space:]]*lat[[:space:]]+\(/ {
+      unit = ""
+      if (match($0, /\((nsec|usec|msec)\)/, unit_match)) {
+        unit = unit_match[1]
+      }
       if (match($0, /avg=[0-9.]+/)) {
-        print substr($0, RSTART, RLENGTH)
+        print substr($0, RSTART, RLENGTH) unit
+        exit
+      }
+    }
+    /^[[:space:]]*clat[[:space:]]+\(/ {
+      unit = ""
+      if (match($0, /\((nsec|usec|msec)\)/, unit_match)) {
+        unit = unit_match[1]
+      }
+      if (match($0, /avg=[0-9.]+/)) {
+        print substr($0, RSTART, RLENGTH) unit
         exit
       }
     }
   ' "$file" 2>/dev/null || true
 }
 
+extract_direction_latency_avg() {
+  local file="$1"
+  local direction="$2"
+  awk -v direction="$direction" '
+    $0 ~ "^[[:space:]]*" direction ":" {
+      in_block = 1
+      next
+    }
+    in_block && $0 ~ "^[[:space:]]*(read|write):" {
+      exit
+    }
+    in_block && /^[[:space:]]*lat[[:space:]]+\(/ {
+      unit = ""
+      if (match($0, /\((nsec|usec|msec)\)/, unit_match)) {
+        unit = unit_match[1]
+      }
+      if (match($0, /avg=[0-9.]+/)) {
+        print substr($0, RSTART, RLENGTH) unit
+        exit
+      }
+    }
+    in_block && /^[[:space:]]*clat[[:space:]]+\(/ && fallback == "" {
+      unit = ""
+      if (match($0, /\((nsec|usec|msec)\)/, unit_match)) {
+        unit = unit_match[1]
+      }
+      if (match($0, /avg=[0-9.]+/)) {
+        fallback = substr($0, RSTART, RLENGTH) unit
+      }
+    }
+    END {
+      if (fallback != "") {
+        print fallback
+      }
+    }
+  ' "$file" 2>/dev/null || true
+}
+
+test_primary_direction() {
+  case "$1" in
+    seq_read|rand_read) echo "read" ;;
+    seq_write) echo "write" ;;
+    *) return 1 ;;
+  esac
+}
+
+test_is_mixed() {
+  case "$1" in
+    rand_rw) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 append_summary() {
   local disk="$1"
   local test_name="$2"
   local file="$3"
-  local bw iops lat test_name_cn
+  local bw iops lat test_name_cn direction
+  local read_bw write_bw read_iops write_iops read_lat write_lat
 
-  bw="$(extract_metric_token "$file" '(BW|bw)=[^,[:space:]]+')"
-  iops="$(extract_metric_token "$file" '(IOPS|iops)=[^,[:space:]]+')"
-  lat="$(extract_latency_avg "$file")"
+  if test_is_mixed "$test_name"; then
+    read_bw="$(extract_direction_metric_token "$file" 'read' '(BW|bw)=[^,[:space:]]+')"
+    write_bw="$(extract_direction_metric_token "$file" 'write' '(BW|bw)=[^,[:space:]]+')"
+    read_iops="$(extract_direction_metric_token "$file" 'read' '(IOPS|iops)=[^,[:space:]]+')"
+    write_iops="$(extract_direction_metric_token "$file" 'write' '(IOPS|iops)=[^,[:space:]]+')"
+    read_lat="$(extract_direction_latency_avg "$file" 'read')"
+    write_lat="$(extract_direction_latency_avg "$file" 'write')"
+
+    bw="R:${read_bw:-N/A} / W:${write_bw:-N/A}"
+    iops="R:${read_iops:-N/A} / W:${write_iops:-N/A}"
+    lat="R:${read_lat:-N/A} / W:${write_lat:-N/A}"
+  else
+    direction="$(test_primary_direction "$test_name" || true)"
+    if [[ -n "$direction" ]]; then
+      bw="$(extract_direction_metric_token "$file" "$direction" '(BW|bw)=[^,[:space:]]+')"
+      iops="$(extract_direction_metric_token "$file" "$direction" '(IOPS|iops)=[^,[:space:]]+')"
+      lat="$(extract_direction_latency_avg "$file" "$direction")"
+    else
+      bw="$(extract_metric_token "$file" '(BW|bw)=[^,[:space:]]+')"
+      iops="$(extract_metric_token "$file" '(IOPS|iops)=[^,[:space:]]+')"
+      lat="$(extract_latency_avg "$file")"
+    fi
+  fi
   test_name_cn="$(translate_test_name "$test_name")"
 
   [[ -n "$bw" ]] || bw="N/A"

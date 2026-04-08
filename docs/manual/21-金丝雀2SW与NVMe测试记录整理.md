@@ -472,7 +472,7 @@ fio --name=rand_rw --filename=/dev/nvme0n1 --rw=randrw --rwmixread=70 --bs=4k --
 
 配套自动化脚本见：
 
-- `practice/scripts-练手脚本/nvme_fio_auto_test.sh`
+- `practice/scripts-练手脚本/legacy/nvme_fio_auto_test.sh`
 
 ## 6. 建议补齐项
 

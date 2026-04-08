@@ -218,7 +218,7 @@ fio-unified-results-xxxxxx/nvme1n1/
 
 这个脚本的定位是统一入口，优先覆盖原先两类场景：
 
-- `nvme_fio_auto_test.sh` 的单盘 / 全盘批量能力
-- `nvme_multi_device_fio.sh` 的多盘指定能力
+- [`legacy/nvme_fio_auto_test.sh`](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/practice/scripts-练手脚本/legacy/nvme_fio_auto_test.sh) 的单盘 / 全盘批量能力
+- [`legacy/nvme_multi_device_fio.sh`](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/practice/scripts-练手脚本/legacy/nvme_multi_device_fio.sh) 的多盘指定能力
 
-后续建议优先使用 `nvme_fio_unified.sh`，旧脚本保留作为历史版本参考。
+后续建议优先使用 `nvme_fio_unified.sh`，旧脚本已归档到 `legacy/` 目录，仅保留作为历史版本参考。

@@ -2,20 +2,27 @@
 
 ## 这个目录放什么
 
-这里用于保存每天的复盘、学习稿和现场案例。
+这里用于保存每天的工作记录、学习稿和现场案例。
 
 和 `docs/` 的区别是：
 
 - `daily-work-学习总结/` 更偏当天输入和阶段性沉淀
 - `docs/` 更偏长期稳定的知识库
 
+## 近期工作记录
+
+- [2026-04-08-工作记录.md](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/daily-work-学习总结/2026-04-08-工作记录.md)
+- [2026-04-07-工作记录.md](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/daily-work-学习总结/2026-04-07-工作记录.md)
+- [2026-04-03-工作记录.md](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/daily-work-学习总结/2026-04-03-工作记录.md)
+- [2026-04-01-工作记录.md](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/daily-work-学习总结/2026-04-01-工作记录.md)
+
 ## 当前内容类型
 
-### 1. 每日复盘
+### 1. 每日工作记录
 
 命名建议：
 
-- `YYYY-MM-DD-工作复盘.md`
+- `YYYY-MM-DD-工作记录.md`
 
 适合记录：
 
@@ -39,7 +46,7 @@
 
 当前入口：
 
-- [Day学习索引.md](E:/72785/Codex/SIT提升/Server-SIT-Mastery/daily-work-学习总结/Day学习索引.md)
+- [Day学习索引.md](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/daily-work-学习总结/Day学习索引.md)
 
 ### 3. 案例稿
 
@@ -56,13 +63,13 @@
 
 当前入口：
 
-- [案例索引.md](E:/72785/Codex/SIT提升/Server-SIT-Mastery/daily-work-学习总结/案例索引.md)
+- [案例索引.md](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/daily-work-学习总结/案例索引.md)
 
 ### 4. 原始工作日志
 
 目录：
 
-[logs-每天工作日志](E:/72785/Codex/SIT提升/Server-SIT-Mastery/daily-work-学习总结/logs-每天工作日志)
+- [logs-每天工作日志](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/daily-work-学习总结/logs-每天工作日志)
 
 适合放：
 
@@ -72,7 +79,7 @@
 
 ## 使用建议
 
-如果一份内容经过整理后已经具有通用性，就继续往 `docs/manual/` 或 `docs/100-day-plan/` 提升，不要一直停留在日常区。
+如果一份内容经过整理后已经具备通用性，就继续往 `docs/manual/` 或 `docs/100-day-plan/` 提升，不要一直停留在日常区。
 
 例如：
 

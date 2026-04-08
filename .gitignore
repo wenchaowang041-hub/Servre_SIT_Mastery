@@ -17,3 +17,4 @@ __pycache__/
 /out/
 git-init-smoke-test/
 *.db
+.codex-home/
