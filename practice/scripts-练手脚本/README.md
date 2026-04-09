@@ -12,6 +12,7 @@
 - [stress_12h_kunpeng.sh](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/practice/scripts-练手脚本/stress_12h_kunpeng.sh)
 - [check_pcie.py](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/practice/scripts-练手脚本/check_pcie.py)
 - [nvme_hotplug_scripts](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/practice/scripts-练手脚本/nvme_hotplug_scripts)
+- [nvme_hotplug_scripts/run-hotplug-test.sh](/C:/Users/王文超/Desktop/Servre_SIT_Mastery/practice/scripts-练手脚本/nvme_hotplug_scripts/run-hotplug-test.sh)
 
 ## 历史脚本
 
@@ -28,4 +29,5 @@
 - Windows PowerShell 下优先使用 `nvme_fio_unified.ps1`
 - Day19 的 PCIe 清点练习使用 `check_pcie.py`
 - NVMe 热插拔现场脚本与执行手册统一收口在 `nvme_hotplug_scripts/`
+- `run-hotplug-test.sh` 是 NVMe 热插拔的统一执行入口
 - 只有在复盘旧命令或追溯历史行为时，再回看 `legacy/`
