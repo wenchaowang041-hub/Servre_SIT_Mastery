@@ -32,3 +32,10 @@
 
 ## Maintenance
 - Update this file when the project structure or collaboration rules change.
+
+## Local Output Rules
+- Default output path: create new scripts, manuals, notes, and generated files inside `C:\Users\王文超\Desktop\Servre_SIT_Mastery`.
+- Do not place generated files on the Windows desktop root unless the user explicitly requests that exact location.
+- Prefer `practice/scripts-练手脚本/` for executable scripts and script manuals.
+- Prefer `docs/` for general documentation.
+- Before creating a new local file, first choose the most suitable existing subdirectory inside `Servre_SIT_Mastery`.
