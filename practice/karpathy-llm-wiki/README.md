@@ -16,39 +16,73 @@
 
 - 全局安装 `llm-wiki-compiler`
 - 创建本地工作目录
-- 放入一个示例 source
 - 提供一键编译脚本
+- 提供仓库内容同步脚本
 
 当前还缺：
 
 - `ANTHROPIC_API_KEY`
 
-没有 key 时，可以先阅读目录结构和示例 source；有 key 后再执行编译和查询。
+没有 key 时，可以先同步资料并查看 `sources/` 结构；有 key 后再执行编译和查询。
 
 ## 目录说明
 
 - `sources/` 原始资料
 - `wiki/` 编译后的知识库页面
 - `run-compile.ps1` 编译辅助脚本
+- `sync-repo-sources.ps1` 把当前仓库里的手册、Day 学习稿、案例同步到 `sources/`
 
-## 最短使用方式
+## 建议工作流
 
-先在 PowerShell 里设置 key：
+### 1. 先同步仓库资料
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\sync-repo-sources.ps1
+```
+
+同步后你会在 `sources/` 里看到：
+
+- `manual-*.md`
+- `day-*.md`
+- `case-*.md`
+
+### 2. 再设置 key
 
 ```powershell
 $env:ANTHROPIC_API_KEY="你的key"
 ```
 
-然后进入本目录执行：
+### 3. 编译成 wiki
 
 ```powershell
-.\run-compile.ps1
+powershell -ExecutionPolicy Bypass -File .\run-compile.ps1
 ```
 
-编译完成后可以继续问：
+### 4. 查询
 
 ```powershell
-llmwiki.cmd query "What did Andrej Karpathy focus on?"
+llmwiki.cmd query "How do I troubleshoot PCIe device recognition issues?"
 ```
 
-如果你以后想继续扩展资料，只要把新的 `.md` 或其他文本资料放进 `sources/`，再重新编译即可。
+## 适合放进知识库的仓库内容
+
+优先同步这些：
+
+- `docs/manual/` 下的正式手册
+- `daily-work-学习总结/` 下的 `Day*.md`
+- `daily-work-学习总结/` 下的 `案例-*.md`
+
+不建议直接同步这些：
+
+- `README.md`
+- 模板文件
+- 原始日志
+- 仍然很零散、还没整理成方法论的临时记录
+
+## 后续扩展
+
+如果你后面觉得好用，可以再继续扩展：
+
+- 加入 `docs/bmc-cases/` 的正式案例
+- 加入 `docs/100-day-plan/` 里的博客稿
+- 按主题拆成多个知识库目录
