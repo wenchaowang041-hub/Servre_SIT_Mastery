@@ -52,6 +52,12 @@ powershell -ExecutionPolicy Bypass -File .\sync-repo-sources.ps1
 $env:ANTHROPIC_API_KEY="你的key"
 ```
 
+也可以先参考：
+
+```text
+.env.example
+```
+
 ### 3. 编译成 wiki
 
 ```powershell
@@ -62,6 +68,12 @@ powershell -ExecutionPolicy Bypass -File .\run-compile.ps1
 
 ```powershell
 llmwiki.cmd query "How do I troubleshoot PCIe device recognition issues?"
+```
+
+或者：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run-query.ps1 "How do I troubleshoot PCIe device recognition issues?"
 ```
 
 ## 适合放进知识库的仓库内容

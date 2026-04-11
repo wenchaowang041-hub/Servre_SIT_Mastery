@@ -1,3 +1,8 @@
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$Question
+)
+
 $ErrorActionPreference = "Stop"
 
 Set-Location $PSScriptRoot
@@ -8,8 +13,4 @@ if (-not $env:ANTHROPIC_API_KEY) {
     exit 1
 }
 
-Write-Host "Compiling sources/ -> wiki/" -ForegroundColor Green
-llmwiki.cmd compile
-
-Write-Host "Compile finished." -ForegroundColor Green
-Write-Host 'Next: llmwiki.cmd query "How do I troubleshoot PCIe device recognition issues?"' -ForegroundColor Cyan
+llmwiki.cmd query $Question
