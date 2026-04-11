@@ -21,7 +21,8 @@
 
 当前还缺：
 
-- `ANTHROPIC_API_KEY`
+- Anthropic key，或者
+- OpenAI-compatible key + base URL
 
 没有 key 时，可以先同步资料并查看 `sources/` 结构；有 key 后再执行编译和查询。
 
@@ -46,10 +47,20 @@ powershell -ExecutionPolicy Bypass -File .\sync-repo-sources.ps1
 - `day-*.md`
 - `case-*.md`
 
-### 2. 再设置 key
+### 2. 设置 key
+
+#### 方案 A：Anthropic 原生
 
 ```powershell
-$env:ANTHROPIC_API_KEY="你的key"
+$env:ANTHROPIC_API_KEY="your-key"
+```
+
+#### 方案 B：千问 / OpenAI-compatible
+
+```powershell
+$env:LLMWIKI_OPENAI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+$env:LLMWIKI_OPENAI_API_KEY="your-qwen-key"
+$env:LLMWIKI_MODEL="qwen-max"
 ```
 
 也可以先参考：
@@ -57,6 +68,8 @@ $env:ANTHROPIC_API_KEY="你的key"
 ```text
 .env.example
 ```
+
+现在这台机器上的 `llm-wiki-compiler` 已经补了本地兼容层，支持读取上面这组 `LLMWIKI_OPENAI_*` 变量。
 
 ### 3. 编译成 wiki
 
