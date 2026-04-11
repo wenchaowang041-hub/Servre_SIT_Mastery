@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "ms-ceintl.vscode-language-pack-zh-hans",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-vscode.powershell",
+    "yzhang.markdown-all-in-one",
+    "foxundermoon.shell-format",
+    "timonwong.shellcheck",
+    "anthropic.claude-code",
+    "openai.chatgpt"
+  ]
+}

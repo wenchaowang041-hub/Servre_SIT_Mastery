@@ -1,0 +1,41 @@
+{
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/~$*": true
+  },
+  "search.exclude": {
+    "**/.git": true
+  },
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": false,
+  "editor.renderWhitespace": "selection",
+  "workbench.startupEditor": "none",
+  "workbench.editor.enablePreview": false,
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "[markdown]": {
+    "editor.quickSuggestions": {
+      "comments": "off",
+      "strings": "off",
+      "other": "off"
+    },
+    "editor.wordWrap": "on",
+    "editor.formatOnSave": true
+  },
+  "markdown.preview.breaks": true,
+  "markdown.extension.toc.updateOnSave": true,
+  "[python]": {
+    "editor.formatOnSave": true
+  },
+  "[powershell]": {
+    "editor.formatOnSave": true
+  },
+  "python.analysis.autoImportCompletions": true,
+  "python.terminal.activateEnvironment": true,
+  "shellformat.flag": "-i 2",
+  "shellcheck.enable": true
+}
