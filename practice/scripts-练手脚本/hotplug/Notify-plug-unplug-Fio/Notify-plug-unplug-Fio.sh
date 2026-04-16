@@ -71,9 +71,34 @@ wait_for_disk() {
     return 1
 }
 
-# 注：软件断电功能已跳过，不同平台 slot address 匹配逻辑不同不可靠
-# 纯靠物理拔插 + 设备检测
+# 获取磁盘对应的 PCI 插槽号
+# 逻辑: 从 /sys/block/nvmeXn1/device/nvme0 的完整路径中提取 NVMe 控制器 BDF
+#       例: /sys/devices/pci0000:06/.../0000:09:00.0/nvme/nvme0
+#       取倒数第二个目录名: 0000:09:00
+#       和 /sys/bus/pci/slots/X/address 精确比对
 slot_of_disk() {
+    local disk="$1"
+    local nvme_ctrl
+    nvme_ctrl="$(readlink -f "/sys/block/$(basename "${disk}")/device/nvme0")"
+
+    # 取倒数第二个目录名（0000:YY:YY.Y），去掉 function
+    local controller_dir
+    controller_dir="$(basename "$(dirname "$nvme_ctrl")")"
+    local device_base="${controller_dir%.*}"
+
+    # 遍历所有插槽，比对 address 文件
+    for s in /sys/bus/pci/slots/*/; do
+        [ -d "$s" ] || continue
+        local addr_file="${s}address"
+        if [ -f "$addr_file" ]; then
+            local slot_addr
+            slot_addr="$(cat "$addr_file" 2>/dev/null | tr -d '[:space:]' || true)"
+            if [[ "$slot_addr" == "$device_base" ]]; then
+                basename "$s"
+                return 0
+            fi
+        fi
+    done
     echo ""
 }
 
@@ -89,6 +114,19 @@ echo ""
 # 获取所有 DUT 盘
 mapfile -t dut_disks < <(get_dut_disks)
 echo "DUT disks: ${dut_disks[*]}"
+echo ""
+
+# 获取 PCI 插槽映射
+dut_slots=()
+for disk in "${dut_disks[@]}"; do
+    slot="$(slot_of_disk "$disk")"
+    if [ -n "$slot" ]; then
+        dut_slots+=("$slot")
+        echo "  ${disk} -> 插槽 ${slot}"
+    else
+        echo "[警告] ${disk} 未找到对应 PCI 插槽"
+    fi
+done
 echo ""
 
 # Step 1: 分区
@@ -117,10 +155,15 @@ for ((loop=1; loop<=CYCLES; loop++)); do
     bash "${SCRIPT_DIR}/fio.sh" > "05-fio-loop${loop}.log" 2>&1 &
     sleep 5
 
-    # 2. 提示拔出所有盘
-    echo "[提示] 请拔出所有硬盘，按 Enter 确认..."
-    read -r -p "" _
-    record_manual_state "loop ${loop} batch pull done"
+    # 2. 软件断电所有 PCI 插槽（模拟拔盘信号）
+    if [ ${#dut_slots[@]} -gt 0 ]; then
+        echo "[断电] 批量关闭 PCI 插槽电源..."
+        for slot in "${dut_slots[@]}"; do
+            echo "  关闭插槽 ${slot}"
+            echo 0 > "/sys/bus/pci/slots/${slot}/power" 2>/dev/null || echo "    [警告] 插槽 ${slot} 下电失败"
+        done
+        record_manual_state "loop ${loop} batch power off done"
+    fi
 
     # 3. 等待
     seconds=$PULL_WAIT_SECONDS
@@ -131,7 +174,7 @@ for ((loop=1; loop<=CYCLES; loop++)); do
     done
     printf '\r等待: done   \n'
 
-    # 4. 提示插回
+    # 4. 提示插回（软件不上电，靠物理插入触发系统识别）
     echo "[提示] 请插入所有硬盘，按 Enter 确认..."
     read -r -p "" _
     record_manual_state "loop ${loop} physical reinsert done"
