@@ -81,8 +81,9 @@ for ((loop=1; loop<=CYCLES; loop++)); do
     echo "===== Hotplug loop ${loop}/${CYCLES} ====="
 
     # 每轮启动 FIO 压力测试（后台运行，覆盖整轮拔插时间）
-    # 单盘约 PULL_WAIT + INSERT_WAIT + 30s 缓冲，乘以盘数
-    FIO_RUNTIME=$(( ${#dut_disks[@]} * (PULL_WAIT_SECONDS + INSERT_WAIT_SECONDS + 30) ))
+    # 单盘耗时 = 人工拔/插等待 + INSERT_WAIT + md5校验 + 交互缓冲 ~40s
+    # FIO 需覆盖该轮所有盘的操作时间，额外留 60s 余量
+    FIO_RUNTIME=$(( ${#dut_disks[@]} * (PULL_WAIT_SECONDS + INSERT_WAIT_SECONDS + 40) + 60 ))
     echo "[FIO] 本轮 FIO 压力测试启动，预计运行 ${FIO_RUNTIME}s"
     export FIO_RUNTIME
     bash "${SCRIPT_DIR}/fio-safe.sh" > "05-fio-loop${loop}.log" 2>&1 &
