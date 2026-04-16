@@ -5,23 +5,17 @@
 #   分区 → UUID → 预采集日志 → MD5源文件
 #   循环N轮：FIO→软件断电所有槽→等待→提示物理插回→自动检测识别→MD5校验→清FIO
 #   最终日志采集
-#
-# 与原脚本对比优化：
-#   - 原: 断电后等5秒→提示插盘→监控/var/log/messages "iommu: Adding"计数
-#   - 新: 断电后等PULL_WAIT→提示插盘→轮询/dev设备节点检测（更稳定）
-#   - 原: for i in {0..11} 包含系统盘
-#   - 新: 自动遍历非系统盘，排除nvme5
-#   - 原: 60s 固定 runtime
-#   - 新: FIO_RUNTIME 可配置，默认300s
 #===============================================================================
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 CYCLES="${CYCLES:-10}"
 PULL_WAIT_SECONDS="${PULL_WAIT_SECONDS:-30}"
 DISK_DETECT_TIMEOUT="${DISK_DETECT_TIMEOUT:-30}"
 ROUND_NAME="${1:-$(date '+%F_%H%M%S')}"
-LOG_ROOT="${LOG_ROOT:-$(pwd)/runs}"
+LOG_ROOT="${LOG_ROOT:-${SCRIPT_DIR}/runs}"
 ROUND_DIR="${LOG_ROOT}/${ROUND_NAME}"
 
 # 系统盘（排除）
@@ -78,17 +72,30 @@ wait_for_disk() {
 }
 
 # 获取磁盘对应的 PCI 插槽号
+# 逻辑: 从 nvme sysfs 路径提取设备 BDF (如 0000:09:00.0)
+#       去掉 function 部分 (0000:09:00)
+#       和 /sys/bus/pci/slots/X/address 比对
 slot_of_disk() {
     local disk="$1"
     local node
     node="$(readlink -f "/sys/class/nvme/$(basename "${disk}")")"
+
+    # 从路径中提取设备 BDF: /sys/devices/pci0000:XX/.../0000:XX:XX.X/nvme/nvmeN
+    # 取倒数第二个目录名（如 0000:09:00.0）
+    local device_bdf
+    device_bdf="$(basename "$(dirname "$node")")"
+
+    # 去掉 function 部分: 0000:09:00.0 -> 0000:09:00
+    local device_base="${device_bdf%.*}"
+
+    # 遍历所有插槽，比对 address 文件
     for s in /sys/bus/pci/slots/*/; do
         [ -d "$s" ] || continue
         local addr_file="${s}address"
         if [ -f "$addr_file" ]; then
-            local addr
-            addr="$(cat "$addr_file" 2>/dev/null || true)"
-            if [[ "$node" == *"$addr"* ]]; then
+            local slot_addr
+            slot_addr="$(cat "$addr_file" 2>/dev/null | tr -d '[:space:]' || true)"
+            if [[ "$slot_addr" == "$device_base" ]]; then
                 basename "$s"
                 return 0
             fi
@@ -125,19 +132,19 @@ done
 echo ""
 
 # Step 1: 分区
-step_run "Step 1: partition disks" "$(pwd)/1-fenqu.sh" "01-fenqu.log"
+step_run "Step 1: partition disks" "${SCRIPT_DIR}/1-fenqu.sh" "01-fenqu.log"
 
 # Step 2: UUID 绑定
-step_run "Step 2: bind UUID" "$(pwd)/UUID.sh" "02-uuid.log"
+step_run "Step 2: bind UUID" "${SCRIPT_DIR}/UUID.sh" "02-uuid.log"
 
 echo "Running mount -a to verify /etc/fstab..."
 mount -a | tee -a "02-uuid.log"
 
 # Step 3: 预采集日志
-step_run "Step 3: collect start logs" "$(pwd)/2-check-start.sh" "03-check-start.log"
+step_run "Step 3: collect start logs" "${SCRIPT_DIR}/2-check-start.sh" "03-check-start.log"
 
 # Step 4: MD5 源文件
-step_run "Step 4: create md5 source files" "$(pwd)/3-md5.sh" "04-md5-create.log"
+step_run "Step 4: create md5 source files" "${SCRIPT_DIR}/3-md5.sh" "04-md5-create.log"
 
 for ((loop=1; loop<=CYCLES; loop++)); do
     echo
@@ -147,7 +154,7 @@ for ((loop=1; loop<=CYCLES; loop++)); do
     FIO_RUNTIME=$(( PULL_WAIT_SECONDS + ${#dut_disks[@]} * 30 + 60 ))
     echo "[FIO] 启动压力测试，预计运行 ${FIO_RUNTIME}s"
     export FIO_RUNTIME
-    bash "$(pwd)/fio.sh" > "05-fio-loop${loop}.log" 2>&1 &
+    bash "${SCRIPT_DIR}/fio.sh" > "05-fio-loop${loop}.log" 2>&1 &
     sleep 5
 
     # 2. 软件断电所有 PCI 插槽（模拟拔盘）
@@ -172,7 +179,7 @@ for ((loop=1; loop<=CYCLES; loop++)); do
     read -r -p "" _
     record_manual_state "loop ${loop} physical reinsert done"
 
-    # 5. 轮询检测所有盘已识别（替代原脚本的 /var/log/messages 监控）
+    # 5. 轮询检测所有盘已识别
     echo "[检测] 等待所有盘被系统识别..."
     all_detected=true
     for disk in "${dut_disks[@]}"; do
@@ -185,7 +192,7 @@ for ((loop=1; loop<=CYCLES; loop++)); do
     fi
 
     # 6. MD5 校验
-    step_run "Step 6: md5 check (loop ${loop})" "$(pwd)/4-check-md5.sh" "06-check-md5-loop${loop}.log"
+    step_run "Step 6: md5 check (loop ${loop})" "${SCRIPT_DIR}/4-check-md5.sh" "06-check-md5-loop${loop}.log"
     record_manual_state "loop ${loop} all disks md5 check finished"
 
     # 7. 清理 FIO 进程
@@ -196,7 +203,7 @@ for ((loop=1; loop<=CYCLES; loop++)); do
 done
 
 # Step 7: 最终日志采集
-step_run "Step 7: final log check" "$(pwd)/5-check-log.sh" "07-check-log.log"
+step_run "Step 7: final log check" "${SCRIPT_DIR}/5-check-log.sh" "07-check-log.log"
 
 echo
 echo "所有循环执行完毕。"
