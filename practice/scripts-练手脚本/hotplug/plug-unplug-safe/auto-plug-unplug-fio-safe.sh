@@ -112,11 +112,9 @@ for ((loop=1; loop<=CYCLES; loop++)); do
         echo "[警告] 部分盘未被识别，但继续执行后续步骤"
     fi
 
-    # 6. 逐个执行 MD5 校验
-    for disk in "${dut_disks[@]}"; do
-        step_run "Step 6: md5 check (loop ${loop}, ${disk})" "${SCRIPT_DIR}/4-check-md5-safe.sh" "06-check-md5-loop${loop}-$(basename "${disk}").log"
-        record_manual_state "loop ${loop} disk ${disk} md5 check finished"
-    done
+    # 6. 执行一次 MD5 校验（4-check-md5-safe.sh 内部会遍历所有盘）
+    step_run "Step 6: md5 check (loop ${loop})" "${SCRIPT_DIR}/4-check-md5-safe.sh" "06-check-md5-loop${loop}.log"
+    record_manual_state "loop ${loop} all disks md5 check finished"
 
     # 7. 清理 FIO 进程
     echo "[FIO] 清理本轮 FIO 进程..."
