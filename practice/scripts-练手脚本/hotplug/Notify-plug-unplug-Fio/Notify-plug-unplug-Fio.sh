@@ -80,15 +80,19 @@ slot_of_disk() {
     local disk="$1"
     local disk_base
     disk_base="$(basename "${disk}")"
-    # 从设备名提取控制器名: nvme10n1 -> nvme10, nvme1n1 -> nvme1
-    local nvme_ctrl_name="${disk_base%n1}"
-    local nvme_ctrl
-    nvme_ctrl="$(readlink -f "/sys/block/${disk_base}/device/${nvme_ctrl_name}")"
 
-    # 取倒数第二个目录名（0000:YY:YY.Y），去掉 function
-    local controller_dir
-    controller_dir="$(basename "$(dirname "$nvme_ctrl")")"
-    local device_base="${controller_dir%.*}"
+    # 从 device symlink 的 resolved 路径中提取 PCI BDF
+    # 例: /sys/.../pci0000:06/0000:06:04.0/0000:09:00.0/nvme/nvme0
+    local resolved
+    resolved="$(readlink -f "/sys/block/${disk_base}/device")"
+
+    # 正则提取 0000:XX:XX.X 格式的 BDF
+    if [[ "$resolved" =~ ([0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2})\.[0-9] ]]; then
+        local device_base="${BASH_REMATCH[1]}"
+    else
+        echo ""
+        return 1
+    fi
 
     # 遍历所有插槽，比对 address 文件
     for s in /sys/bus/pci/slots/*/; do
