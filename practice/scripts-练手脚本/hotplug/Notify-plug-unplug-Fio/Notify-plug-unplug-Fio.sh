@@ -83,16 +83,14 @@ slot_of_disk() {
 
     # 从 device symlink 的 resolved 路径中提取 PCI BDF
     # 例: /sys/.../pci0000:06/0000:06:04.0/0000:09:00.0/nvme/nvme0
+    # 注意: 路径中有两个 BDF（Root Port 和设备本身），必须取最后一个
     local resolved
     resolved="$(readlink -f "/sys/block/${disk_base}/device")"
 
-    # 正则提取 0000:XX:XX.X 格式的 BDF
-    if [[ "$resolved" =~ ([0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2})\.[0-9] ]]; then
-        local device_base="${BASH_REMATCH[1]}"
-    else
-        echo ""
-        return 1
-    fi
+    # 取 /nvme/ 之前的目录，再取最后一个 BDF
+    local before_nvme="${resolved%/nvme/*}"
+    local device_bdf="$(basename "$before_nvme")"
+    local device_base="${device_bdf%.*}"  # 去掉 .0 后缀
 
     # 遍历所有插槽，比对 address 文件
     for s in /sys/bus/pci/slots/*/; do
